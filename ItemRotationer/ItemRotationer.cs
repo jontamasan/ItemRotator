@@ -1,8 +1,5 @@
-﻿using HutongGames.PlayMaker;
-using MSCLoader;
-using System.IO;
+﻿using MSCLoader;
 using UnityEngine;
-using System;
 
 namespace ItemRotationer
 {
@@ -13,8 +10,8 @@ namespace ItemRotationer
         private GameObject _CAM_VERTICAL;
         private bool _go = true;
 
-        KeyPress keyHorizonVirtical = new KeyPress("hv", "Horizon and Vitical", KeyCode.LeftControl);
-        KeyPress keyRoll = new KeyPress("roll", "Rolling", KeyCode.LeftControl, KeyCode.LeftShift);
+        Keybind keyHorizonVirtical = new Keybind("hv", "Horizon and Vitical", KeyCode.LeftControl);
+        Keybind keyRoll = new Keybind("roll", "Rolling", KeyCode.LeftControl, KeyCode.LeftShift);
 
         public override string ID => "ItemRotationer";
         public override string Name => "ItemRotationer";
@@ -35,15 +32,14 @@ namespace ItemRotationer
         // Update is called once per frame
         public override void Update()
         {
-            if (Application.loadedLevelName != "GAME") return;
-
-            if (!Initialize()) return;
-
-            var isHandEmpty = _ITEM.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value;
-            if (isHandEmpty)
-            {
+            if (Application.loadedLevelName != "GAME")
                 return;
-            }
+
+            if (!Initialize())
+                return;
+
+            if (_ITEM.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value)
+                return;
 
             var x = Input.GetAxis("Mouse X");
             var y = Input.GetAxis("Mouse Y");
@@ -55,7 +51,7 @@ namespace ItemRotationer
                 _ITEM.transform.Rotate(_CAM_VERTICAL.transform.right, y, Space.World);
                 /** 終わったら 0,0,0 に戻す必要あり */
             }
-            else if (keyRoll.IsPressed()/* && !Input.anyKeyDown*/)
+            else if (keyRoll.IsPressed())
             {
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
@@ -81,7 +77,7 @@ namespace ItemRotationer
 
     /*********************
     * for ModLoader ver.0.3.2
-    **********************/
+    **********************
     public class KeyPress : Keybind
     {
         public KeyPress(string id, string name, KeyCode key) : base(id, name, key)
@@ -107,4 +103,5 @@ namespace ItemRotationer
             return Input.GetKey(Key);
         }
     }
+    */
 }
