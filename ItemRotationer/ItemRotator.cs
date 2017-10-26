@@ -22,6 +22,7 @@ namespace ItemRotator
         private GameObject _CAM_HORIZONTAL;
         private GameObject _WORLD;
         private GameObject _CAM_VERTICAL;
+        private PlayMakerFSM _fsmHand;
         private struct Angle
         {
             public float x, y, z;
@@ -33,13 +34,13 @@ namespace ItemRotator
             }
         }
 
-        Keybind keyHorizonVirtical = new Keybind("hv", "Horizon and Vitical", KeyCode.LeftControl);
-        Keybind keyRoll = new Keybind("roll", "Rolling", KeyCode.LeftControl, KeyCode.LeftShift);
+        Keybind keyRoll = new Keybind("roll", "Rolling and Vertical", KeyCode.LeftControl);
+        Keybind keyHorizontal = new Keybind("hv", "Horizon and Vertical", KeyCode.LeftControl, KeyCode.LeftShift);
 
         //Called when mod is loading
         public override void OnLoad()
         {
-            Keybind.Add(this, keyHorizonVirtical);
+            Keybind.Add(this, keyHorizontal);
             Keybind.Add(this, keyRoll);
         }
 
@@ -63,41 +64,27 @@ namespace ItemRotator
                 return;
             }
 
-            PlayMakerFSM fsmHand = null;
-            foreach (var e in _HAND.GetComponentsInChildren<PlayMakerFSM>())
-            {
-                foreach (var a in e.FsmVariables.GetAllNamedVariables())
-                {
-                    if (a.Name == "RotationX")
-                    {
-                        fsmHand = e;
-                        break;
-                    }
-                }
-                if (fsmHand != null) break;
-            }
-
             Angle angle;
             angle.x = Input.GetAxis("Mouse X");
             angle.y = Input.GetAxis("Mouse Y");
             angle.z = Input.GetAxis("Mouse ScrollWheel");
-            if (keyHorizonVirtical.IsPressed() && !keyRoll.IsPressed())
+            if (keyRoll.IsPressed() && !keyHorizontal.IsPressed())
             {
-                fsmHand.enabled = false;
+                _fsmHand.enabled = false;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_CAM_VERTICAL.transform, _WORLD.transform, _HAND.transform, angle, true);
+                Rotator(_CAM_VERTICAL.transform, _WORLD.transform, _HAND.transform, angle, false);
             }
-            else if (keyRoll.IsPressed())
+            else if (keyHorizontal.IsPressed())
             {
-                fsmHand.enabled = false;
+                _fsmHand.enabled = false;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _HAND.transform, angle, false);
+                Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _HAND.transform, angle, true);
             }
-            else if (Input.GetKeyUp(keyHorizonVirtical.Key) || Input.GetKeyUp(keyRoll.Key))
+            else if (Input.GetKeyUp(keyHorizontal.Key) || Input.GetKeyUp(keyRoll.Key))
             {
-                fsmHand.enabled = true;
+                _fsmHand.enabled = true;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = true;
             }
@@ -131,8 +118,20 @@ namespace ItemRotator
         {
             _HAND = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera/1Hand_Assemble/Hand");
             _CAM_HORIZONTAL = GameObject.Find("PLAYER");
-            _WORLD = GameObject.Find("MAP");
             _CAM_VERTICAL = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera");
+            _WORLD = GameObject.Find("MAP");
+            foreach (var fsm in _HAND.GetComponentsInChildren<PlayMakerFSM>())
+            {
+                foreach (var v in fsm.FsmVariables.GetAllNamedVariables())
+                {
+                    if (v.Name == "RotationX")
+                    {
+                        _fsmHand = fsm;
+                        break;
+                    }
+                }
+                if (_fsmHand != null) break;
+            }
             if (_HAND == null || _CAM_VERTICAL == null || _CAM_HORIZONTAL == null)
             {
                 return false;
