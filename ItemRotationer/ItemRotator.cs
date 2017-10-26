@@ -20,8 +20,8 @@ namespace ItemRotator
         private const float MOVE_FACTOR = 1f/4f;
         private GameObject _HAND;
         private GameObject _CAM_HORIZONTAL;
+        private GameObject _WORLD;
         private GameObject _CAM_VERTICAL;
-        private PlayMakerFSM _fsmHand = null;
         private struct Angle
         {
             public float x, y, z;
@@ -63,52 +63,66 @@ namespace ItemRotator
                 return;
             }
 
+            PlayMakerFSM fsmHand = null;
+            foreach (var e in _HAND.GetComponentsInChildren<PlayMakerFSM>())
+            {
+                foreach (var a in e.FsmVariables.GetAllNamedVariables())
+                {
+                    if (a.Name == "RotationX")
+                    {
+                        fsmHand = e;
+                        break;
+                    }
+                }
+                if (fsmHand != null) break;
+            }
+
             Angle angle;
             angle.x = Input.GetAxis("Mouse X");
             angle.y = Input.GetAxis("Mouse Y");
             angle.z = Input.GetAxis("Mouse ScrollWheel");
             if (keyHorizonVirtical.IsPressed() && !keyRoll.IsPressed())
             {
-                _fsmHand.enabled = false;
+                fsmHand.enabled = false;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_HAND.transform, _CAM_VERTICAL.transform ,angle, true);
+                Rotator(_CAM_VERTICAL.transform, _WORLD.transform, _HAND.transform, angle, true);
             }
             else if (keyRoll.IsPressed())
             {
-                _fsmHand.enabled = false;
+                fsmHand.enabled = false;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_HAND.transform, _CAM_HORIZONTAL.transform, angle, false);
+                Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _HAND.transform, angle, false);
             }
             else if (Input.GetKeyUp(keyHorizonVirtical.Key) || Input.GetKeyUp(keyRoll.Key))
             {
-                _fsmHand.enabled = true;
+                fsmHand.enabled = true;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = true;
             }
         }
 
         // rotation
-        private void Rotator(Transform target, Transform axis ,Angle angle, bool horizontal)
+        private void Rotator(Transform local_axis, Transform world_axis ,Transform target_obj, Angle angle, bool horizontal)
         {
             if (horizontal)
             {
-                target.Rotate(axis.up, -angle.x * HORIZONTAL_FACTOR, Space.World); // horizontal rotating
+                target_obj.Rotate(world_axis.up, -angle.x * HORIZONTAL_FACTOR, Space.World); // horizontal rotating
             }
-            else
+            else 
             {
-                target.Rotate(axis.forward, -angle.x * HORIZONTAL_FACTOR, Space.World); // rolling
+                target_obj.Rotate(local_axis.forward, -angle.x * HORIZONTAL_FACTOR, Space.World); // rolling
             }
-            target.Rotate(axis.right, angle.y * VERTICAL_FACTOR, Space.World); // vertical rotating
+            target_obj.Rotate(local_axis.right, angle.y * VERTICAL_FACTOR, Space.World); // vertical rotating
 
-            if (target.localPosition.z > 0.1f)
+            if (target_obj.localPosition.z > 0.1f)
             {
-                target.localPosition += new Vector3(0, 0, angle.z * MOVE_FACTOR); // back and forward
+                target_obj.localPosition += new Vector3(0, 0, angle.z * MOVE_FACTOR); // back and forward
             }
             else
             {
-                target.localPosition += new Vector3(0, 0, 0.1f); // limited near position
+                target_obj.localPosition += new Vector3(0, 0, 0.1f); // limited near position
             }
         }
 
@@ -117,24 +131,12 @@ namespace ItemRotator
         {
             _HAND = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera/1Hand_Assemble/Hand");
             _CAM_HORIZONTAL = GameObject.Find("PLAYER");
+            _WORLD = GameObject.Find("MAP");
             _CAM_VERTICAL = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera");
             if (_HAND == null || _CAM_VERTICAL == null || _CAM_HORIZONTAL == null)
             {
                 return false;
             }
-            foreach (var e in _HAND.GetComponentsInChildren<PlayMakerFSM>())
-            {
-                foreach (var a in e.FsmVariables.GetAllNamedVariables())
-                {
-                    if (a.Name == "RotationX")
-                    {
-                        _fsmHand = e;
-                        break;
-                    }
-                }
-                if (_fsmHand != null) break;
-            }
-
             return true;
         }
     }
