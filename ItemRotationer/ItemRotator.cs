@@ -1,6 +1,5 @@
 ﻿using HutongGames.PlayMaker;
 using MSCLoader;
-using System;
 using UnityEngine;
 
 namespace ItemRotator
