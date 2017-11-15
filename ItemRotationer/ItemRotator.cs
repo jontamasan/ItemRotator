@@ -9,19 +9,20 @@ namespace ItemRotator
         public override string ID => "ItemRotator";
         public override string Name => "ItemRotator";
         public override string Author => "PigeonBB";
-        public override string Version => "0.1";
+        public override string Version => "0.2";
 
         //Set this to true if you will be load custom assets from Assets folder.
         //This will create subfolder in Assets folder for your mod.
         public override bool UseAssetsFolder => false;
 
-        private const float HORIZONTAL_FACTOR = 2f;
-        private const float VERTICAL_FACTOR = 2f;
-        private const float MOVE_FACTOR = 1f/4f;
+        private const float MOVE_FACTOR = 2f/4f;
+        private const float VERTICAL_FACTOR = 5;
+        private const float HORIZONTAL_FACTOR = 5;
+        private bool _isInit;
         private GameObject _HAND;
-        private GameObject _CAM_HORIZONTAL;
         private GameObject _WORLD;
         private GameObject _CAM_VERTICAL;
+        private GameObject _CAM_HORIZONTAL;
         private struct Angle
         {
             public float x, y, z;
@@ -33,13 +34,13 @@ namespace ItemRotator
             }
         }
 
-        Keybind keyHorizonVirtical = new Keybind("hv", "Horizon and Vitical", KeyCode.LeftControl);
-        Keybind keyRoll = new Keybind("roll", "Rolling", KeyCode.LeftControl, KeyCode.LeftShift);
+        Keybind keyHorizon = new Keybind("hv", "Horizon and Vertical", KeyCode.LeftControl);
+        Keybind keyRoll = new Keybind("roll", "Rolling and Vertical", KeyCode.LeftControl, KeyCode.LeftShift);
 
         //Called when mod is loading
         public override void OnLoad()
         {
-            Keybind.Add(this, keyHorizonVirtical);
+            Keybind.Add(this, keyHorizon);
             Keybind.Add(this, keyRoll);
         }
 
@@ -49,8 +50,11 @@ namespace ItemRotator
             if (Application.loadedLevelName != "GAME")
                 return;
 
-            if (!Initialize())
-                return;
+            if (!_isInit)
+            {
+                if (!Initialize()) return;
+                _isInit = true;
+            }
 
             var isHnadEmpty = _HAND.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value;
             var isInMenu = FsmVariables.GlobalVariables.FindFsmBool("PlayerInMenu").Value;
@@ -81,7 +85,7 @@ namespace ItemRotator
             angle.x = Input.GetAxis("Mouse X");
             angle.y = Input.GetAxis("Mouse Y");
             angle.z = Input.GetAxis("Mouse ScrollWheel");
-            if (keyHorizonVirtical.IsPressed() && !keyRoll.IsPressed())
+            if (keyHorizon.IsPressed() && !keyRoll.IsPressed())
             {
                 fsmHand.enabled = false;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
@@ -95,7 +99,7 @@ namespace ItemRotator
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
                 Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _HAND.transform, angle, false);
             }
-            else if (Input.GetKeyUp(keyHorizonVirtical.Key) || Input.GetKeyUp(keyRoll.Key))
+            else if (Input.GetKeyUp(keyHorizon.Key) || Input.GetKeyUp(keyRoll.Key))
             {
                 fsmHand.enabled = true;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
@@ -131,9 +135,9 @@ namespace ItemRotator
         {
             _HAND = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera/1Hand_Assemble/Hand");
             _CAM_HORIZONTAL = GameObject.Find("PLAYER");
-            _WORLD = GameObject.Find("MAP");
             _CAM_VERTICAL = GameObject.Find("PLAYER/Pivot/Camera/FPSCamera");
-            if (_HAND == null || _CAM_VERTICAL == null || _CAM_HORIZONTAL == null)
+            _WORLD = GameObject.Find("MAP");
+            if (!_HAND || !_CAM_VERTICAL || !_CAM_HORIZONTAL || !_WORLD)
             {
                 return false;
             }
