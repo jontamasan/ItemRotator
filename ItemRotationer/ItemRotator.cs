@@ -1,4 +1,5 @@
 ﻿using HutongGames.PlayMaker;
+using HutongGames.PlayMaker.Actions;
 using MSCLoader;
 using UnityEngine;
 
@@ -19,10 +20,12 @@ namespace ItemRotator
         private const float VERTICAL_FACTOR = 5;
         private const float HORIZONTAL_FACTOR = 5;
         private bool _isInit;
+        private bool _picked;
         private GameObject _HAND;
         private GameObject _WORLD;
         private GameObject _CAM_VERTICAL;
         private GameObject _CAM_HORIZONTAL;
+        private GameObject _item;
         private struct Angle
         {
             public float x, y, z;
@@ -60,25 +63,18 @@ namespace ItemRotator
             var isInMenu = FsmVariables.GlobalVariables.FindFsmBool("PlayerInMenu").Value;
             if (isHnadEmpty)
             {
+                if (_picked)
+                {
+                    var rb = _item.GetComponent<Rigidbody>();
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                    _picked = false;
+                }
                 return;
             }
             else if (isInMenu)
             {
                 return;
-            }
-
-            PlayMakerFSM fsmHand = null;
-            foreach (var e in _HAND.GetComponentsInChildren<PlayMakerFSM>())
-            {
-                foreach (var a in e.FsmVariables.GetAllNamedVariables())
-                {
-                    if (a.Name == "RotationX")
-                    {
-                        fsmHand = e;
-                        break;
-                    }
-                }
-                if (fsmHand != null) break;
             }
 
             Angle angle;
@@ -87,28 +83,63 @@ namespace ItemRotator
             angle.z = Input.GetAxis("Mouse ScrollWheel");
             if (keyHorizon.IsPressed() && !keyRoll.IsPressed())
             {
-                fsmHand.enabled = false;
+                if (!_picked)
+                {
+                    _item = PickItem(_HAND);
+                    _picked = true;
+                }
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_CAM_VERTICAL.transform, _WORLD.transform, _HAND.transform, angle, true);
+                Rotator(_CAM_VERTICAL.transform, _WORLD.transform, _item.transform, angle, true);
             }
             else if (keyRoll.IsPressed())
             {
-                fsmHand.enabled = false;
+                if (!_picked)
+                {
+                    _item = PickItem(_HAND);
+                    _picked = true;
+                }
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = false;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = false;
-                Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _HAND.transform, angle, false);
+                Rotator(_CAM_HORIZONTAL.transform, _WORLD.transform, _item.transform, angle, false);
             }
             else if (Input.GetKeyUp(keyHorizon.Key) || Input.GetKeyUp(keyRoll.Key))
             {
-                fsmHand.enabled = true;
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = true;
             }
+            else
+            {
+                if (!_picked)
+                {
+                    _item = PickItem(_HAND);
+                    _picked = true;
+                }
+                _item.transform.Rotate(_CAM_HORIZONTAL.transform.right, angle.z * VERTICAL_FACTOR * 10, Space.World);
+            }
+        }
+
+        private static GameObject PickItem(GameObject hand)
+        {
+            foreach (var e in hand.GetComponentsInChildren<PlayMakerFSM>())
+            {
+                if (e.name == "Hand")
+                {
+                    PlayMakerFSM fsmHand = e;
+                    string itemName = fsmHand.FsmVariables.GetFsmString("Name").Value;
+                    GameObject item = GameObject.Find(itemName);
+                    item.transform.parent = GameObject.Find("FPSCamera").transform;
+                    var rb = item.GetComponent<Rigidbody>();
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                    return item;
+                }
+            }
+            return null;
         }
 
         // rotation
-        private void Rotator(Transform local_axis, Transform world_axis ,Transform target_obj, Angle angle, bool horizontal)
+        private static void Rotator(Transform local_axis, Transform world_axis ,Transform target_obj, Angle angle, bool horizontal)
         {
             if (horizontal)
             {
