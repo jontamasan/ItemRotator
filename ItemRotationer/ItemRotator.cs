@@ -10,7 +10,7 @@ namespace ItemRotator
         public override string ID => "ItemRotator";
         public override string Name => "ItemRotator";
         public override string Author => "PigeonBB";
-        public override string Version => "0.2";
+        public override string Version => "0.21";
 
         //Set this to true if you will be load custom assets from Assets folder.
         //This will create subfolder in Assets folder for your mod.
@@ -59,24 +59,27 @@ namespace ItemRotator
                 _isInit = true;
             }
 
-            var isHnadEmpty = _HAND.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value;
-            var isInMenu = FsmVariables.GlobalVariables.FindFsmBool("PlayerInMenu").Value;
-            if (isHnadEmpty)
+            if ( Input.GetKeyDown(KeyCode.Mouse0))
             {
                 if (_picked)
                 {
                     var rb = _item.GetComponent<Rigidbody>();
                     rb.isKinematic = false;
                     rb.useGravity = true;
+                    _item.transform.parent = null;
                     _picked = false;
                 }
+            }
+            var isHnadEmpty = _HAND.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value;
+            var isInMenu = FsmVariables.GlobalVariables.FindFsmBool("PlayerInMenu").Value;
+            if (isHnadEmpty)
+            {
                 return;
             }
             else if (isInMenu)
             {
                 return;
             }
-
             Angle angle;
             angle.x = Input.GetAxis("Mouse X");
             angle.y = Input.GetAxis("Mouse Y");
@@ -108,13 +111,8 @@ namespace ItemRotator
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = true;
             }
-            else
+            if (_picked)
             {
-                if (!_picked)
-                {
-                    _item = PickItem(_HAND);
-                    _picked = true;
-                }
                 _item.transform.Rotate(_CAM_HORIZONTAL.transform.right, angle.z * VERTICAL_FACTOR * 10, Space.World);
             }
         }
@@ -129,9 +127,12 @@ namespace ItemRotator
                     string itemName = fsmHand.FsmVariables.GetFsmString("Name").Value;
                     GameObject item = GameObject.Find(itemName);
                     item.transform.parent = GameObject.Find("FPSCamera").transform;
-                    var rb = item.GetComponent<Rigidbody>();
-                    rb.isKinematic = true;
-                    rb.useGravity = false;
+                    if (item.GetComponent<Rigidbody>())
+                    {
+                        var rb = item.GetComponent<Rigidbody>();
+                        rb.isKinematic = true;
+                        rb.useGravity = false;
+                    }
                     return item;
                 }
             }
