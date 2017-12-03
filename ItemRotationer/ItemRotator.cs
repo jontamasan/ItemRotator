@@ -70,6 +70,18 @@ namespace ItemRotator
                     _picked = false;
                 }
             }
+            else if (Input.GetKeyDown(KeyCode.Mouse1))
+            {
+                if (_picked)
+                {
+                    var rb = _item.GetComponent<Rigidbody>();
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                    _item.transform.parent = null;
+                    rb.AddForce(_CAM_VERTICAL.transform.forward * 2, ForceMode.VelocityChange);
+                    _picked = false;
+                }
+            }
             var isHnadEmpty = _HAND.GetComponent<PlayMakerFSM>().FsmVariables.GetFsmBool("HandEmpty").Value;
             var isInMenu = FsmVariables.GlobalVariables.FindFsmBool("PlayerInMenu").Value;
             if (isHnadEmpty)
@@ -111,10 +123,9 @@ namespace ItemRotator
                 _CAM_VERTICAL.GetComponent<Behaviour>().enabled = true;
                 _CAM_HORIZONTAL.GetComponent<Behaviour>().enabled = true;
             }
-            if (_picked)
-            {
-                _item.transform.Rotate(_CAM_HORIZONTAL.transform.right, angle.z * VERTICAL_FACTOR * 10, Space.World);
-            }
+            else if (_picked)
+                    _item.transform.Rotate(_CAM_HORIZONTAL.transform.right, angle.z * VERTICAL_FACTOR * 10, Space.World);
+            
         }
 
         private static GameObject PickItem(GameObject hand)
@@ -124,15 +135,13 @@ namespace ItemRotator
                 if (e.name == "Hand")
                 {
                     PlayMakerFSM fsmHand = e;
-                    string itemName = fsmHand.FsmVariables.GetFsmString("Name").Value;
-                    GameObject item = GameObject.Find(itemName);
+                    GameObject item = fsmHand.FsmVariables.GetFsmGameObject("PickedObject").Value;
                     item.transform.parent = GameObject.Find("FPSCamera").transform;
-                    if (item.GetComponent<Rigidbody>())
-                    {
-                        var rb = item.GetComponent<Rigidbody>();
-                        rb.isKinematic = true;
-                        rb.useGravity = false;
-                    }
+                    item.GetComponent<Rigidbody>();
+                    var rb = item.GetComponent<Rigidbody>();
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+
                     return item;
                 }
             }
